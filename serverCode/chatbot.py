@@ -157,7 +157,6 @@ def partsList(partsString):
 ### Other API Functions
 
 def getMechanics(longitude, latitude):
-    # Assuming location is a tuple of (latitude, longitude)
     url = "https://places.googleapis.com/v1/places:searchNearby"
     headers = {
         'Content-Type': 'application/json',
@@ -165,7 +164,7 @@ def getMechanics(longitude, latitude):
         'X-Goog-FieldMask': 'places.displayName,places.rating,places.formattedAddress'
     }
     body = {
-        "includedTypes": ["car_repair"],  # This should match the type from Google's supported types
+        "includedTypes": ["car_repair"],
         "maxResultCount": 10,
         "locationRestriction": {
             "circle": {
@@ -173,22 +172,53 @@ def getMechanics(longitude, latitude):
                     "latitude": latitude,
                     "longitude": longitude
                 },
-                "radius": 10000  # Search within 5 kilometers
+                "radius": 10000
             }
         }
     }
     
-    response = requests.post(url, headers=headers, data=json.dumps(body))
-    results = response.json()
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(body))
+        response.raise_for_status()  # Raise HTTPError for bad responses
+        results = response.json()
+
+        if 'places' in results:
+            places = sorted(
+                [place for place in results['places'] if 'rating' in place],
+                key=lambda x: x['rating'],
+                reverse=True
+            )
+            return places
+        else:
+            print("No car repair shops were found within the specified area.")  # Print the whole response for better debugging
+            return ["No car repair shops were found within the specified area."]
+
+    except requests.RequestException as e:
+        print("Request error:", e)
+        return []  # Return an empty list in case of request error
+
+
+# returns answer to openai request
+def getResp(question):
+    client = OpenAI(
+        api_key=openai_key,
+    )
     
-    if 'places' in results:
-        # Sort places by rating in descending order, filter out places without ratings
-        places = sorted(
-            [place for place in results['places'] if 'rating' in place],
-            key=lambda x: x['rating'],
-            reverse=True
-        )
-        return places
-    else:
-        print("Response:", results)  # Print the whole response for better debugging
-        return []
+
+    input_text = f"""
+    Convert this to a clean neat and tidy list of this information seperated by double new line (only return the list, no extra dialougue): {question}
+    """
+
+    response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": input_text,
+            }
+        ],
+        model="gpt-4-turbo",
+    )
+
+    # Extract the translated text from the model's response
+    answer = response.choices[0].message.content.strip("'")
+    return answer

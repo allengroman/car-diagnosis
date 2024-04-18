@@ -46,7 +46,7 @@ async def get_diagnosis(carIssue: str = Header(None), carDetails: str = Header(N
 
 # get parts for car
 @app.get("/getParts")
-async def custom_chat(carIssue: str = Header(None), carDetails: str = Header(None), carDiagnosis: str = Header(None)):
+async def get_parts(carIssue: str = Header(None), carDetails: str = Header(None), carDiagnosis: str = Header(None)):
     pList = getParts(carIssue, carDetails, carDiagnosis)
     answer = partsList(pList)
     return {'response': answer}
@@ -54,7 +54,8 @@ async def custom_chat(carIssue: str = Header(None), carDetails: str = Header(Non
 
 # gets mechanic shops in area
 @app.get("/getMech")
-async def custom_chat(longitude: int = Header(None), latitude: int = Header(None)):
-    answer = getMechanics()
-    return {'response': answer}
+async def custom_ch(longitude: float = Header(None), latitude: float = Header(None)):
+    answer = f"Retrieve names, ratings, and address of top 5 car auto repairs in the area near coordinates ({longitude},{latitude})"
+    response = getResp(answer)
+    return {'response': response}
     
